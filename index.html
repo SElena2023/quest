@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Квест: Комп'ютерна графіка та Krita</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c27;
+    --card: #1e2235;
+    --border: #2e3556;
+    --accent1: #ff6b35;
+    --accent2: #ffd23f;
+    --accent3: #06d6a0;
+    --accent4: #4361ee;
+    --text: #e8eaf6;
+    --muted: #8892b0;
+    --correct: #06d6a0;
+    --wrong: #ef233c;
+    --glow1: rgba(255,107,53,0.18);
+    --glow4: rgba(67,97,238,0.18);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* STARS BG */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 70%, rgba(255,255,255,0.35) 0%, transparent 100%),
+      radial-gradient(1px 1px at 10% 85%, rgba(255,255,255,0.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(2px 2px at 35% 50%, rgba(255,210,63,0.2) 0%, transparent 100%),
+      radial-gradient(2px 2px at 65% 20%, rgba(67,97,238,0.2) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 60px 0 30px;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    color: #111;
+    font-weight: 900;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-family: 'Baloo 2', cursive;
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent2) 50%, var(--accent1) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+  .hero p {
+    color: var(--muted);
+    font-size: 1.05rem;
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* PROGRESS */
+  .progress-bar-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    height: 12px;
+    margin: 36px 0 10px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 50px;
+    background: linear-gradient(90deg, var(--accent4), var(--accent3));
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+    width: 0%;
+  }
+  .progress-label {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+
+  /* PUZZLE PREVIEW */
+  .puzzle-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 36px;
+    text-align: center;
+  }
+  .puzzle-section h2 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+    color: var(--accent2);
+  }
+  .puzzle-section p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+  .puzzle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 130px);
+    grid-template-rows: repeat(2, 130px);
+    gap: 6px;
+    margin: 0 auto;
+    width: fit-content;
+  }
+  .puzzle-piece {
+    width: 130px;
+    height: 130px;
+    border-radius: 12px;
+    border: 2px dashed var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    transition: all 0.4s ease;
+    background: var(--bg2);
+    position: relative;
+    overflow: hidden;
+  }
+  .puzzle-piece.earned {
+    border: 2px solid transparent;
+    background: var(--bg2);
+    animation: piecePop 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .puzzle-piece.earned::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    opacity: 0.15;
+  }
+  .puzzle-piece[data-idx="0"].earned { background: linear-gradient(135deg, #ff6b35 0%, #f7b733 100%); border-color: var(--accent1); }
+  .puzzle-piece[data-idx="1"].earned { background: linear-gradient(135deg, #4361ee 0%, #7b2ff7 100%); border-color: var(--accent4); }
+  .puzzle-piece[data-idx="2"].earned { background: linear-gradient(135deg, #06d6a0 0%, #0891b2 100%); border-color: var(--accent3); }
+  .puzzle-piece[data-idx="3"].earned { background: linear-gradient(135deg, #ffd23f 0%, #ff6b35 100%); border-color: var(--accent2); }
+  @keyframes piecePop {
+    0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+    70% { transform: scale(1.1) rotate(3deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  .piece-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    z-index: 1;
+  }
+  .piece-icon { font-size: 2.2rem; }
+  .piece-label { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; }
+
+  /* SECTIONS */
+  .section-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    margin-bottom: 28px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .section-card.active { border-color: var(--accent4); box-shadow: 0 0 30px var(--glow4); }
+  .section-card.completed { border-color: var(--accent3); box-shadow: 0 0 20px rgba(6,214,160,0.15); }
+  .section-card.locked { opacity: 0.55; pointer-events: none; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 28px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .section-header:hover { background: rgba(255,255,255,0.03); }
+  .section-num {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 1.2rem;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .section-num.s0 { background: linear-gradient(135deg,#ff6b35,#f7b733); color: #111; }
+  .section-num.s1 { background: linear-gradient(135deg,#4361ee,#7b2ff7); color: #fff; }
+  .section-num.s2 { background: linear-gradient(135deg,#06d6a0,#0891b2); color: #111; }
+  .section-num.s3 { background: linear-gradient(135deg,#ffd23f,#ff6b35); color: #111; }
+  .section-info { flex: 1; }
+  .section-info h3 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .section-info p { color: var(--muted); font-size: 0.85rem; }
+  .section-status {
+    font-size: 1.3rem;
+    margin-left: auto;
+  }
+  .chevron {
+    color: var(--muted);
+    font-size: 1.2rem;
+    transition: transform 0.3s;
+    margin-left: 8px;
+  }
+  .section-card.open .chevron { transform: rotate(180deg); }
+
+  .section-body {
+    display: none;
+    padding: 0 28px 28px;
+    animation: fadeSlide 0.3s ease;
+  }
+  .section-card.open .section-body { display: block; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* QUESTIONS */
+  .question-block {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 16px;
+    transition: border-color 0.3s;
+  }
+  .question-block.answered-correct { border-color: var(--correct); }
+  .question-block.answered-wrong { border-color: var(--wrong); }
+
+  .q-num {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .q-text {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .option-btn {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--accent4);
+    background: rgba(67,97,238,0.08);
+    transform: translateX(4px);
+  }
+  .option-btn:disabled { cursor: not-allowed; }
+  .option-btn.correct {
+    border-color: var(--correct);
+    background: rgba(6,214,160,0.1);
+    color: var(--correct);
+  }
+  .option-btn.wrong {
+    border-color: var(--wrong);
+    background: rgba(239,35,60,0.08);
+    color: var(--wrong);
+  }
+  .option-btn.reveal-correct {
+    border-color: var(--correct);
+    background: rgba(6,214,160,0.05);
+    color: var(--correct);
+    opacity: 0.6;
+  }
+  .opt-letter {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .option-btn.correct .opt-letter { background: var(--correct); color: #111; }
+  .option-btn.wrong .opt-letter { background: var(--wrong); color: #fff; }
+  .option-btn.reveal-correct .opt-letter { background: var(--correct); color: #111; }
+
+  .feedback {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct { background: rgba(6,214,160,0.1); color: var(--correct); border-left: 3px solid var(--correct); }
+  .feedback.wrong { background: rgba(239,35,60,0.08); color: #ff6b7a; border-left: 3px solid var(--wrong); }
+
+  /* MATCH QUESTION */
+  .match-container { display: flex; flex-direction: column; gap: 10px; }
+  .match-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .match-term {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    min-width: 160px;
+  }
+  .match-arrow { color: var(--muted); font-size: 1.2rem; }
+  .match-select {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex: 1;
+    min-width: 140px;
+  }
+  .match-select:focus { outline: none; border-color: var(--accent4); }
+  .match-select.correct { border-color: var(--correct); color: var(--correct); }
+  .match-select.wrong { border-color: var(--wrong); color: var(--wrong); }
+  .match-check-btn {
+    background: linear-gradient(135deg, var(--accent4), #7b2ff7);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    color: #fff;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .match-check-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .match-check-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* SECTION RESULT */
+  .section-result {
+    background: var(--bg2);
+    border-radius: 14px;
+    padding: 28px;
+    text-align: center;
+    margin-top: 20px;
+    display: none;
+    animation: fadeSlide 0.4s ease;
+  }
+  .section-result.show { display: block; }
+  .result-icon { font-size: 3.5rem; margin-bottom: 12px; }
+  .result-title {
+    font-family: 'Baloo 2', cursive;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .result-title.success { color: var(--correct); }
+  .result-title.fail { color: var(--wrong); }
+  .result-desc { color: var(--muted); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.6; }
+  .result-score {
+    display: inline-block;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 22px;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: 20px;
+  }
+  .retry-btn {
+    background: transparent;
+    border: 1.5px solid var(--wrong);
+    border-radius: 10px;
+    padding: 10px 24px;
+    color: var(--wrong);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 10px;
+  }
+  .retry-btn:hover { background: rgba(239,35,60,0.1); }
+
+  /* FINAL */
+  .final-screen {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 48px 32px;
+    text-align: center;
+    margin-top: 32px;
+    display: none;
+    animation: fadeSlide 0.5s ease;
+  }
+  .final-screen.show { display: block; }
+  .final-screen h2 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent2), var(--accent1));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 14px;
+  }
+  .final-screen p { color: var(--muted); font-size: 1rem; line-height: 1.7; max-width: 500px; margin: 0 auto 24px; }
+  .confetti {
+    font-size: 2.5rem;
+    letter-spacing: 12px;
+    margin-bottom: 20px;
+    animation: bounce 1s infinite alternate;
+  }
+  @keyframes bounce { to { transform: translateY(-8px); } }
+
+  .krita-logo-final {
+    display: grid;
+    grid-template-columns: repeat(2, 90px);
+    grid-template-rows: repeat(2, 90px);
+    gap: 4px;
+    margin: 28px auto;
+    width: fit-content;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(255,107,53,0.3);
+  }
+  .logo-piece {
+    width: 90px; height: 90px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: rgba(255,255,255,0.9);
+  }
+  .logo-piece:nth-child(1) { background: linear-gradient(135deg,#ff6b35,#f7b733); }
+  .logo-piece:nth-child(2) { background: linear-gradient(135deg,#4361ee,#7b2ff7); }
+  .logo-piece:nth-child(3) { background: linear-gradient(135deg,#06d6a0,#0891b2); }
+  .logo-piece:nth-child(4) { background: linear-gradient(135deg,#ffd23f,#ff6b35); }
+
+  @media (max-width: 600px) {
+    .section-header { padding: 18px 18px; gap: 12px; }
+    .section-body { padding: 0 18px 22px; }
+    .puzzle-grid { grid-template-columns: repeat(2,100px); grid-template-rows: repeat(2,100px); }
+    .puzzle-piece { width: 100px; height: 100px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-badge">🎮 Освітній квест · 6 клас</div>
+    <h1>Комп'ютерна графіка та Krita</h1>
+    <p>Перевір свої знання, пройди 4 розділи та збери всі частини логотипу Krita!</p>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="mainProgress"></div>
+  </div>
+  <div class="progress-label" id="progressLabel">Пройдено: 0 з 4 розділів</div>
+
+  <!-- PUZZLE -->
+  <div class="puzzle-section">
+    <h2>🧩 Твій пазл</h2>
+    <p>Проходь розділи та збирай частини логотипу Krita!</p>
+    <div class="puzzle-grid">
+      <div class="puzzle-piece" data-idx="0"><span>🔒</span></div>
+      <div class="puzzle-piece" data-idx="1"><span>🔒</span></div>
+      <div class="puzzle-piece" data-idx="2"><span>🔒</span></div>
+      <div class="puzzle-piece" data-idx="3"><span>🔒</span></div>
+    </div>
+  </div>
+
+  <!-- SECTIONS -->
+  <div id="sections-container"></div>
+
+  <!-- FINAL -->
+  <div class="final-screen" id="finalScreen">
+    <div class="confetti">🎉✨🏆✨🎉</div>
+    <h2>Вітаємо! Ти пройшов квест!</h2>
+    <p>Ти відмінно засвоїв тему «Комп'ютерна графіка та Krita». Всі частини логотипу зібрано — склади пазл!</p>
+    <div class="krita-logo-final">
+      <div class="logo-piece">🖌️</div>
+      <div class="logo-piece">🎨</div>
+      <div class="logo-piece">✏️</div>
+      <div class="logo-piece">⭐</div>
+    </div>
+    <p style="font-size:0.9rem; color:var(--muted);">Роздрукуй або збережи своє досягнення!</p>
+  </div>
+
+</div>
+
+<script>
+const SECTIONS = [
+  {
+    title: "Основи комп'ютерної графіки",
+    desc: "3 питання · Що таке графіка та її види",
+    icon: "🖥️",
+    color: "s0",
+    pieceLabel: "Основи",
+    pieceIcon: "🖥️",
+    questions: [
+      {
+        type: "choice",
+        text: "Що таке комп'ютерна графіка?",
+        options: [
+          "Розділ інформатики, що вивчає способи та засоби створення й опрацювання графічних зображень",
+          "Програма для малювання на комп'ютері",
+          "Набір кольорів у комп'ютерному монітор",
+          "Пристрій для виведення зображень на екран"
+        ],
+        correct: 0,
+        explanation: "Комп'ютерна графіка — розділ інформатики, який вивчає способи та засоби створення й опрацювання графічних зображень з використанням комп'ютерної техніки."
+      },
+      {
+        type: "choice",
+        text: "Що є основним об'єктом комп'ютерної графіки?",
+        options: [
+          "Пікселі",
+          "Шари зображення",
+          "Графічне зображення",
+          "Кольорова палітра"
+        ],
+        correct: 2,
+        explanation: "Основним об'єктом комп'ютерної графіки є графічне зображення. Воно може бути малюнком, фотографією, діаграмою, схемою тощо."
+      },
+      {
+        type: "choice",
+        text: "Де НЕ застосовується комп'ютерна графіка?",
+        options: [
+          "Медицина та наука",
+          "Рекламний бізнес та індустрія розваг",
+          "Заповнення декларацій у паперовому вигляді",
+          "Освіта та техніка"
+        ],
+        correct: 2,
+        explanation: "Комп'ютерна графіка використовується в науці, техніці, медицині, освіті, рекламному бізнесі та індустрії розваг. Паперове заповнення документів — не пов'язане з нею."
+      }
+    ]
+  },
+  {
+    title: "Растрові зображення",
+    desc: "4 питання · Пікселі, роздільність, формати",
+    icon: "⬛",
+    color: "s1",
+    pieceLabel: "Растр",
+    pieceIcon: "⬛",
+    questions: [
+      {
+        type: "choice",
+        text: "З чого складається растрове графічне зображення?",
+        options: [
+          "З геометричних фігур — примітивів",
+          "З окремих маленьких прямокутників — пікселів",
+          "З математичних формул",
+          "З кольорових шарів"
+        ],
+        correct: 1,
+        explanation: "Растрове графічне зображення складається з окремих маленьких прямокутників — пікселів (від англ. PICtures ELement — елемент зображення)."
+      },
+      {
+        type: "choice",
+        text: "Що таке піксель?",
+        options: [
+          "Найменший об'єкт растрового зображення, що має властивості розташування та колір",
+          "Одиниця виміру розміру файлу",
+          "Назва інструменту в редакторі Krita",
+          "Формат збереження зображень"
+        ],
+        correct: 0,
+        explanation: "Піксель є найменшим об'єктом растрового зображення та має такі властивості: розташування (місце знаходження) та колір."
+      },
+      {
+        type: "match",
+        text: "Встанови відповідність між форматами та їх описом:",
+        pairs: [
+          { term: "BMP", def: "Без стиснення, велике розширення" },
+          { term: "JPEG", def: "Стиснення зі втратою якості" },
+          { term: "PNG", def: "Стиснення без втрати якості" },
+          { term: "GIF", def: "Підтримує анімацію" }
+        ],
+        allDefs: [
+          "Без стиснення, велике розширення",
+          "Стиснення зі втратою якості",
+          "Стиснення без втрати якості",
+          "Підтримує анімацію"
+        ]
+      },
+      {
+        type: "choice",
+        text: "Яке явище виникає при збільшенні растрового зображення?",
+        options: [
+          "Векторизація",
+          "Пікселізація зображення",
+          "Підвищення роздільності",
+          "Зменшення розміру файлу"
+        ],
+        correct: 1,
+        explanation: "При збільшенні масштабу перегляду растрового зображення стає помітною мозаїчна структура — це явище називають пікселізацією зображення."
+      }
+    ]
+  },
+  {
+    title: "Векторні зображення",
+    desc: "4 питання · Примітиви, властивості, переваги",
+    icon: "🔷",
+    color: "s2",
+    pieceLabel: "Вектор",
+    pieceIcon: "🔷",
+    questions: [
+      {
+        type: "choice",
+        text: "З чого складається векторне зображення?",
+        options: [
+          "З пікселів",
+          "З точок та їх кольорів",
+          "З окремих геометричних фігур — графічних примітивів",
+          "З растрових шарів"
+        ],
+        correct: 2,
+        explanation: "Векторне зображення складається з окремих геометричних фігур — графічних примітивів: відрізків, багатокутників, кривих, овалів тощо."
+      },
+      {
+        type: "choice",
+        text: "Яка ПЕРЕВАГА векторних зображень порівняно з растровими?",
+        options: [
+          "Вони виглядають реалістичніше при зображенні фотографій",
+          "Їх можна отримати з фотокамери",
+          "При збільшенні зберігається якість зображення",
+          "Вони займають менше місця, ніж растрові за тих самих умов"
+        ],
+        correct: 2,
+        explanation: "Головна перевага векторних зображень: при збільшенні зберігається якість — пікселізації не відбувається. Також невеликі за розміром файли та простота редагування елементів."
+      },
+      {
+        type: "choice",
+        text: "Які властивості має графічний примітив у векторній графіці?",
+        options: [
+          "Тільки розмір та розташування",
+          "Роздільність та глибина кольору",
+          "Розмір, форма, колір і товщина лінії контуру, колір і спосіб заливки",
+          "Лише колір і форма"
+        ],
+        correct: 2,
+        explanation: "Графічні примітиви мають такі властивості: розмір, форма, колір і товщина лінії контуру, колір і спосіб заливки внутрішньої області та інші."
+      },
+      {
+        type: "choice",
+        text: "Який формат файлу є векторним?",
+        options: [
+          "JPEG (.jpg)",
+          "PNG (.png)",
+          "SVG (.svg)",
+          "BMP (.bmp)"
+        ],
+        correct: 2,
+        explanation: "SVG (Scalable Vector Graphics — векторна графіка, що масштабується) — векторний формат, який широко застосовується для створення креслень і вебсайтів."
+      }
+    ]
+  },
+  {
+    title: "Графічний редактор Krita",
+    desc: "4 питання · Інтерфейс, інструменти, збереження",
+    icon: "🎨",
+    color: "s3",
+    pieceLabel: "Krita",
+    pieceIcon: "🎨",
+    questions: [
+      {
+        type: "choice",
+        text: "Для чого призначений графічний редактор Krita?",
+        options: [
+          "Тільки для текстових документів",
+          "Для створення та опрацювання як растрових, так і векторних зображень",
+          "Виключно для растрових зображень",
+          "Тільки для редагування векторної графіки"
+        ],
+        correct: 1,
+        explanation: "Графічний редактор Krita призначено для створення та опрацювання як растрових, так і векторних зображень."
+      },
+      {
+        type: "choice",
+        text: "Який шар потрібно додати для роботи з векторними об'єктами у Krita?",
+        options: [
+          "Растровий шар",
+          "Шар тла",
+          "Векторний шар",
+          "Шар малювання"
+        ],
+        correct: 2,
+        explanation: "Для створення векторного зображення у Krita потрібно додати векторний шар: на бічній панелі Шари → кнопка + → Додати векторний шар."
+      },
+      {
+        type: "choice",
+        text: "Що таке крива Безьє у Krita?",
+        options: [
+          "Інструмент для заливки кольором",
+          "Особливий об'єкт векторного зображення, що складається з точок перегинання та дуг між ними",
+          "Фільтр для растрових зображень",
+          "Тип шару для тексту"
+        ],
+        correct: 1,
+        explanation: "Крива Безьє — особливий об'єкт векторного зображення. Вона містить точки перегинання (вузли), між якими розміщено дуги. Її використовують для малювання складних форм."
+      },
+      {
+        type: "choice",
+        text: "Як зберегти векторне зображення у форматі SVG у Krita?",
+        options: [
+          "Файл → Зберегти",
+          "Файл → Зберегти як → .svg",
+          "Шар → Імпортування/Експортування → Зберегти векторний шар як SVG",
+          "Вибір → Експортувати виділене"
+        ],
+        correct: 2,
+        explanation: "Для збереження векторного зображення у форматі SVG: Шар → Імпортування/Експортування → Зберегти векторний шар як SVG, увести ім'я файлу та натиснути Зберегти."
+      }
+    ]
+  }
+];
+
+// State
+const state = {
+  sectionStates: SECTIONS.map(() => ({
+    open: false,
+    completed: false,
+    failed: false,
+    answers: {},    // q index -> chosen option index
+    matchAnswers: {}, // q index -> {termIdx: defIdx}
+    score: 0,
+    totalQ: 0
+  })),
+  completedCount: 0
+};
+
+function init() {
+  const container = document.getElementById('sections-container');
+  SECTIONS.forEach((sec, si) => {
+    container.appendChild(buildSection(sec, si));
+  });
+  // First section open
+  openSection(0);
+  updateProgress();
+}
+
+function buildSection(sec, si) {
+  const card = document.createElement('div');
+  card.className = 'section-card' + (si === 0 ? ' active' : ' locked');
+  card.id = `section-${si}`;
+
+  const totalQ = sec.questions.length;
+  state.sectionStates[si].totalQ = totalQ;
+
+  card.innerHTML = `
+    <div class="section-header" onclick="toggleSection(${si})">
+      <div class="section-num ${sec.color}">${si + 1}</div>
+      <div class="section-info">
+        <h3>${sec.icon} ${sec.title}</h3>
+        <p>${sec.desc}</p>
+      </div>
+      <div class="section-status" id="status-${si}">⬜</div>
+      <div class="chevron">▼</div>
+    </div>
+    <div class="section-body" id="body-${si}">
+      ${sec.questions.map((q, qi) => buildQuestion(q, si, qi)).join('')}
+      <div class="section-result" id="result-${si}">
+        <div class="result-icon" id="result-icon-${si}"></div>
+        <div class="result-title" id="result-title-${si}"></div>
+        <div class="result-score" id="result-score-${si}"></div>
+        <div class="result-desc" id="result-desc-${si}"></div>
+        <div id="result-actions-${si}"></div>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function buildQuestion(q, si, qi) {
+  if (q.type === 'choice') return buildChoiceQ(q, si, qi);
+  if (q.type === 'match') return buildMatchQ(q, si, qi);
+  return '';
+}
+
+function buildChoiceQ(q, si, qi) {
+  const letters = ['А', 'Б', 'В', 'Г'];
+  return `
+    <div class="question-block" id="qblock-${si}-${qi}">
+      <div class="q-num">Питання ${qi + 1}</div>
+      <div class="q-text">${q.text}</div>
+      <div class="options">
+        ${q.options.map((opt, oi) => `
+          <button class="option-btn" id="opt-${si}-${qi}-${oi}" onclick="chooseOption(${si},${qi},${oi})">
+            <span class="opt-letter">${letters[oi]}</span>
+            ${opt}
+          </button>
+        `).join('')}
+      </div>
+      <div class="feedback" id="fb-${si}-${qi}"></div>
+    </div>
+  `;
+}
+
+function buildMatchQ(q, si, qi) {
+  return `
+    <div class="question-block" id="qblock-${si}-${qi}">
+      <div class="q-num">Питання ${qi + 1} — Встанови відповідність</div>
+      <div class="q-text">${q.text}</div>
+      <div class="match-container">
+        ${q.pairs.map((pair, pi) => `
+          <div class="match-row">
+            <div class="match-term">${pair.term}</div>
+            <div class="match-arrow">→</div>
+            <select class="match-select" id="match-${si}-${qi}-${pi}">
+              <option value="">— оберіть —</option>
+              ${q.allDefs.map(d => `<option value="${d}">${d}</option>`).join('')}
+            </select>
+          </div>
+        `).join('')}
+      </div>
+      <button class="match-check-btn" onclick="checkMatch(${si},${qi})">Перевірити</button>
+      <div class="feedback" id="fb-${si}-${qi}"></div>
+    </div>
+  `;
+}
+
+function toggleSection(si) {
+  const card = document.getElementById(`section-${si}`);
+  if (card.classList.contains('locked')) return;
+  const isOpen = card.classList.contains('open');
+  // close all
+  document.querySelectorAll('.section-card.open').forEach(c => c.classList.remove('open'));
+  if (!isOpen) card.classList.add('open');
+}
+
+function openSection(si) {
+  const card = document.getElementById(`section-${si}`);
+  card.classList.remove('locked');
+  card.classList.add('active', 'open');
+}
+
+function chooseOption(si, qi, oi) {
+  const q = SECTIONS[si].questions[qi];
+  if (state.sectionStates[si].answers[qi] !== undefined) return;
+  state.sectionStates[si].answers[qi] = oi;
+
+  const isCorrect = oi === q.correct;
+  if (isCorrect) state.sectionStates[si].score++;
+
+  // disable all options
+  const letters = ['А', 'Б', 'В', 'Г'];
+  q.options.forEach((_, idx) => {
+    const btn = document.getElementById(`opt-${si}-${qi}-${idx}`);
+    btn.disabled = true;
+    if (idx === q.correct) btn.classList.add(isCorrect && idx === oi ? 'correct' : 'reveal-correct');
+    if (!isCorrect && idx === oi) btn.classList.add('wrong');
+  });
+
+  const fb = document.getElementById(`fb-${si}-${qi}`);
+  fb.className = `feedback show ${isCorrect ? 'correct' : 'wrong'}`;
+  fb.textContent = isCorrect ? `✅ Правильно! ${q.explanation}` : `❌ Неправильно. ${q.explanation}`;
+
+  const block = document.getElementById(`qblock-${si}-${qi}`);
+  block.classList.add(isCorrect ? 'answered-correct' : 'answered-wrong');
+
+  checkSectionComplete(si);
+}
+
+function checkMatch(si, qi) {
+  const q = SECTIONS[si].questions[qi];
+  let correct = 0;
+  let allFilled = true;
+  q.pairs.forEach((pair, pi) => {
+    const sel = document.getElementById(`match-${si}-${qi}-${pi}`);
+    if (!sel.value) { allFilled = false; return; }
+    if (sel.value === pair.def) {
+      correct++;
+      sel.classList.add('correct');
+    } else {
+      sel.classList.add('wrong');
+    }
+    sel.disabled = true;
+  });
+  if (!allFilled) {
+    alert('Будь ласка, оберіть відповідь для кожного рядка!');
+    return;
+  }
+  document.querySelector(`#qblock-${si}-${qi} .match-check-btn`).disabled = true;
+
+  const allCorrect = correct === q.pairs.length;
+  if (allCorrect) state.sectionStates[si].score++;
+  state.sectionStates[si].answers[qi] = allCorrect ? q.pairs.length : correct;
+
+  const fb = document.getElementById(`fb-${si}-${qi}`);
+  fb.className = `feedback show ${allCorrect ? 'correct' : 'wrong'}`;
+  fb.textContent = allCorrect
+    ? `✅ Відмінно! Усі відповідності правильні!`
+    : `❌ Деякі відповіді неправильні. Правильні: ${q.pairs.map(p => `${p.term} → ${p.def}`).join('; ')}`;
+
+  const block = document.getElementById(`qblock-${si}-${qi}`);
+  block.classList.add(allCorrect ? 'answered-correct' : 'answered-wrong');
+
+  checkSectionComplete(si);
+}
+
+function checkSectionComplete(si) {
+  const ss = state.sectionStates[si];
+  const totalQ = SECTIONS[si].questions.length;
+  const answeredCount = Object.keys(ss.answers).length;
+  if (answeredCount < totalQ) return;
+
+  const passed = ss.score >= Math.ceil(totalQ * 0.6); // 60% to pass
+  const resultEl = document.getElementById(`result-${si}`);
+  resultEl.classList.add('show');
+
+  const iconEl = document.getElementById(`result-icon-${si}`);
+  const titleEl = document.getElementById(`result-title-${si}`);
+  const scoreEl = document.getElementById(`result-score-${si}`);
+  const descEl = document.getElementById(`result-desc-${si}`);
+  const actionsEl = document.getElementById(`result-actions-${si}`);
+  const statusEl = document.getElementById(`status-${si}`);
+
+  if (passed) {
+    iconEl.textContent = '🏆';
+    titleEl.textContent = 'Розділ пройдено!';
+    titleEl.className = 'result-title success';
+    scoreEl.textContent = `Результат: ${ss.score} з ${totalQ}`;
+    descEl.textContent = 'Молодець! Ти отримуєш частину пазлу. Переходь до наступного розділу!';
+    actionsEl.innerHTML = si < SECTIONS.length - 1
+      ? `<button class="match-check-btn" onclick="unlockNext(${si})">Далі →</button>`
+      : `<button class="match-check-btn" onclick="showFinal()">Фінал 🎉</button>`;
+    statusEl.textContent = '✅';
+
+    ss.completed = true;
+    state.completedCount++;
+
+    // Unlock puzzle piece
+    earnPuzzlePiece(si);
+
+    // Update card style
+    const card = document.getElementById(`section-${si}`);
+    card.classList.remove('active');
+    card.classList.add('completed');
+
+    updateProgress();
+  } else {
+    iconEl.textContent = '😞';
+    titleEl.textContent = 'Спробуй ще раз!';
+    titleEl.className = 'result-title fail';
+    scoreEl.textContent = `Результат: ${ss.score} з ${totalQ}`;
+    descEl.textContent = `Для проходження потрібно мінімум ${Math.ceil(totalQ * 0.6)} правильних відповідей. Повтори матеріал і спробуй знову!`;
+    actionsEl.innerHTML = `<button class="retry-btn" onclick="retrySection(${si})">Повторити</button>`;
+    statusEl.textContent = '❌';
+    ss.failed = true;
+  }
+}
+
+function earnPuzzlePiece(si) {
+  const piece = document.querySelector(`.puzzle-piece[data-idx="${si}"]`);
+  piece.innerHTML = `<div class="piece-inner"><div class="piece-icon">${SECTIONS[si].pieceIcon}</div><div class="piece-label">${SECTIONS[si].pieceLabel}</div></div>`;
+  piece.classList.add('earned');
+}
+
+function unlockNext(si) {
+  const next = si + 1;
+  if (next < SECTIONS.length) {
+    openSection(next);
+    // Scroll
+    setTimeout(() => {
+      document.getElementById(`section-${next}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
+  }
+}
+
+function retrySection(si) {
+  const ss = state.sectionStates[si];
+  ss.answers = {};
+  ss.matchAnswers = {};
+  ss.score = 0;
+  ss.failed = false;
+  ss.completed = false;
+
+  // Rebuild body
+  const body = document.getElementById(`body-${si}`);
+  const sec = SECTIONS[si];
+  body.innerHTML = sec.questions.map((q, qi) => buildQuestion(q, si, qi)).join('') +
+    `<div class="section-result" id="result-${si}">
+      <div class="result-icon" id="result-icon-${si}"></div>
+      <div class="result-title" id="result-title-${si}"></div>
+      <div class="result-score" id="result-score-${si}"></div>
+      <div class="result-desc" id="result-desc-${si}"></div>
+      <div id="result-actions-${si}"></div>
+    </div>`;
+
+  document.getElementById(`status-${si}`).textContent = '⬜';
+  const card = document.getElementById(`section-${si}`);
+  card.classList.remove('completed');
+  card.classList.add('active');
+}
+
+function updateProgress() {
+  const pct = (state.completedCount / SECTIONS.length) * 100;
+  document.getElementById('mainProgress').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `Пройдено: ${state.completedCount} з ${SECTIONS.length} розділів`;
+}
+
+function showFinal() {
+  document.getElementById('finalScreen').classList.add('show');
+  document.getElementById('finalScreen').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+init();
+</script>
+</body>
+</html>
